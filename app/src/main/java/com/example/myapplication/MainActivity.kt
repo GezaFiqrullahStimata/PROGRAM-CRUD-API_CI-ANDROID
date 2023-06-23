@@ -1,8 +1,6 @@
 package com.example.myapplication
 
-import android.os.Bundle
 import com.google.android.material.snackbar.Snackbar
-import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
@@ -10,49 +8,70 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import android.view.Menu
 import android.view.MenuItem
 import com.example.myapplication.databinding.ActivityMainBinding
+import android.content.Intent
+import androidx.appcompat.app.AppCompatActivity
+import android.os.Bundle
+import android.widget.Button
+import android.widget.Toast
+import androidx.recyclerview.widget.RecyclerView
+import com.example.myapplication.adapter.DataAdapter
+import com.example.myapplication.model.DataItem
+import com.example.myapplication.presenter.CrudView
+import com.example.myapplication.presenter.Presenter
 
-class MainActivity : AppCompatActivity() {
-
-    private lateinit var appBarConfiguration: AppBarConfiguration
-    private lateinit var binding: ActivityMainBinding
-
+class MainActivity : AppCompatActivity(), CrudView {
+    private lateinit var presenter: Presenter
+    lateinit var btnTambah : Button
+    lateinit var rvCategory : RecyclerView
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
-        setSupportActionBar(binding.toolbar)
-
-        val navController = findNavController(R.id.nav_host_fragment_content_main)
-        appBarConfiguration = AppBarConfiguration(navController.graph)
-        setupActionBarWithNavController(navController, appBarConfiguration)
-
-        binding.fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show()
+        setContentView(R.layout.activity_main)
+//tambahan
+        presenter = Presenter(this)
+        presenter.getData()
+        btnTambah = findViewById(R.id.btnTambah)
+        btnTambah.setOnClickListener {
+            startActivity(Intent(applicationContext, UpdateAddActivity::class.java))
+            finish()
         }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        menuInflater.inflate(R.menu.menu_main, menu)
-        return true
+    override fun onSuccessGet(data: List<DataItem>?) {
+        rvCategory = findViewById(R.id.rvCategory)
+        rvCategory.adapter = DataAdapter(data,object : DataAdapter.onClickItem{
+            override fun clicked(item: DataItem?) {
+                val bundle = Bundle()
+                bundle.putSerializable("dataItem", item)
+                val intent = Intent(applicationContext, UpdateAddActivity::class.java)
+                intent.putExtras(bundle)
+                startActivity(intent)
+            }
+            override fun delete(item: DataItem?) {
+                presenter.hapusData(item?.staffId)
+                startActivity(Intent(applicationContext, MainActivity::class.java))
+                finish()
+            }
+        })
     }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        return when (item.itemId) {
-            R.id.action_settings -> true
-            else -> super.onOptionsItemSelected(item)
-        }
+    override fun onFailedGet(msg: String) {
     }
+    override fun onSuccessDelete(msg: String) {
+        presenter.getData()
+    }
+    override fun onErrorDelete(msg: String) {
+        Toast.makeText(
+            this,
+            "Delete Tidak Berhasil",
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+    override fun successAdd(msg: String) {
 
-    override fun onSupportNavigateUp(): Boolean {
-        val navController = findNavController(R.id.nav_host_fragment_content_main)
-        return navController.navigateUp(appBarConfiguration)
-                || super.onSupportNavigateUp()
+    }
+    override fun errorAdd(msg: String) {
+    }
+    override fun onSuccessUpdate(msg: String) {
+    }
+    override fun onErrorUpdate(msg: String) {
     }
 }
